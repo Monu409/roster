@@ -164,7 +164,7 @@ class NextWeekPage extends StatelessWidget{
                       ),
                     ),
                   ),
-                  Padding(
+                  userSchedule.scheduleEndTime != null?Padding(
                     padding: const EdgeInsets.only(top: 20.0),
                     child: Text(
                       'End Time: '+userSchedule.scheduleEndTime,
@@ -173,7 +173,7 @@ class NextWeekPage extends StatelessWidget{
                           fontWeight: FontWeight.w600
                       ),
                     ),
-                  ),
+                  ):Text(''),
                 ],
               )
             ],

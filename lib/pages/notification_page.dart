@@ -26,7 +26,7 @@ class NotificationPageState extends State<NotificationPage>{
     print(response.body);
     if(response.statusCode == 200){
       NotificationModel notificationModel = notificationModelFromJson(response.body);
-      List<Success> dataList = notificationModel.success;
+      List<SuccessNotif> dataList = notificationModel.success;
       return dataList;
     }
     else{
@@ -81,7 +81,7 @@ class NotificationPageState extends State<NotificationPage>{
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              'No Notifification found for you',
+                              'No Notification found for you',
                               style: TextStyle(
                                   fontSize: 15.0,
                                   color: app_theme_dark_color
@@ -105,7 +105,7 @@ class NotificationPageState extends State<NotificationPage>{
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              'No Notifification found for you',
+                              'No Notification found for you',
                               style: TextStyle(
                                   fontSize: 15.0,
                                   color: app_theme_dark_color
@@ -117,7 +117,7 @@ class NotificationPageState extends State<NotificationPage>{
                     ):ListView.builder(
                       itemCount: snapshot.data.length,
                       itemBuilder: (context, index){
-                        List<Success> itemList = snapshot.data;
+                        List<SuccessNotif> itemList = snapshot.data;
                         return Card(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

@@ -13,10 +13,10 @@ class NotificationModel {
     this.success,
   });
 
-  List<Success> success;
+  List<SuccessNotif> success;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) => NotificationModel(
-    success: List<Success>.from(json["success"].map((x) => Success.fromJson(x))),
+    success: List<SuccessNotif>.from(json["success"].map((x) => SuccessNotif.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -24,8 +24,8 @@ class NotificationModel {
   };
 }
 
-class Success {
-  Success({
+class SuccessNotif {
+  SuccessNotif({
     this.title,
     this.massege,
     this.createdAt,
@@ -35,7 +35,7 @@ class Success {
   dynamic massege;
   DateTime createdAt;
 
-  factory Success.fromJson(Map<String, dynamic> json) => Success(
+  factory SuccessNotif.fromJson(Map<String, dynamic> json) => SuccessNotif(
     title: titleValues.map[json["title"]],
     massege: json["massege"],
     createdAt: DateTime.parse(json["created_at"]),

@@ -1,3 +1,4 @@
+import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -107,12 +108,21 @@ class CommonMethods{
     final DateFormat serverFormater = DateFormat('dd MMM yyyy');
     final DateTime displayDate = displayFormater.parse(date);
     final String formatted = serverFormater.format(displayDate);
-
     final DateFormat serverFormater1 = DateFormat('HH:mm');
     final DateTime displayTime = displayFormater.parse(date);
     final String timeFormated = serverFormater1.format(displayTime);
-
     return formatted+'\n'+timeFormated;
+  }
+
+  static Future<String> getId(context) async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      IosDeviceInfo iosDeviceInfo = await deviceInfo.iosInfo;
+      return iosDeviceInfo.identifierForVendor; // unique ID on iOS
+    } else {
+      AndroidDeviceInfo androidDeviceInfo = await deviceInfo.androidInfo;
+      return androidDeviceInfo.androidId; // unique ID on Android
+    }
   }
 
 }

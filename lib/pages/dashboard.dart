@@ -3,16 +3,22 @@ import 'package:clean_swiper/clean_swiper.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
+// import 'package:get_mac/get_mac.dart';
+// import 'package:imei_plugin/imei_plugin.dart';
 import 'package:intl/intl.dart';
+// import 'package:pluginimei/pluginimei.dart';
 import 'package:roster_app/common/api_interface.dart';
 import 'package:roster_app/common/common_methods.dart';
 import 'package:roster_app/models/location_model.dart';
+import 'package:roster_app/models/notification_model.dart';
 import 'package:roster_app/models/scheduler_model.dart';
 import 'package:roster_app/pages/login.dart';
 import 'package:roster_app/pages/notification_page.dart';
 import 'package:roster_app/pages/profile_page.dart';
+// import 'package:serial_number/serial_number.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'next_week_page.dart';
@@ -51,7 +57,7 @@ class DashboardState extends State<Dashboard>{
   TimeOfDay selectedTime = TimeOfDay(hour: 00, minute: 00);
   String isWorkLocation='0';
   FlutterLocalNotificationsPlugin fltrNotification;
-
+  bool isScheduleTomorrow = false;
 
   getPrefData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -125,7 +131,6 @@ class DashboardState extends State<Dashboard>{
 
   Future<dynamic> getLocationData(String loginToken)async{
     print("login_token "+loginToken);
-    // CommonMethods.showAlertDialog(context);
     var mBody = {"remember_token": loginToken};
     final response = await http.post(ApiInterface.GET_LOCATION, body: mBody);
     print(response.body);
@@ -145,7 +150,6 @@ class DashboardState extends State<Dashboard>{
       latLongList.add(longiStr);
       return latLongList;
     } else {
-      // Navigator.of(context).pop();
       CommonMethods.showToast('Something went wrong');
       return null;
     }
@@ -164,6 +168,38 @@ class DashboardState extends State<Dashboard>{
     return dayList;
   }
 
+  Future _getEmailId()async{
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString('email_pref');
+
+  }
+
+  _checkDeviceValidation(){
+    _getEmailId().then((emailStr){
+      CommonMethods.getId(context).then((deviceId)async{
+        Map sendMap = {
+          'email':emailStr,
+          'device_id':deviceId,
+        };
+        final response = await http.post(ApiInterface.DEVICE_VALIDATION, body: sendMap);
+        // if (response.statusCode == 200) {
+          final String orderResponse = response.body;
+          Map<String, dynamic> d = json.decode(orderResponse.trim());
+          var status = d["message"];
+          if(status != 'Authorized'){
+            SharedPreferences mPref = await SharedPreferences.getInstance();
+            mPref.setBool("login_status", false);
+            Navigator.pop(context);
+            Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => Login()),
+                ModalRoute.withName("/payment"));
+          // }
+        }
+      });
+    });
+  }
+
   goToProfilePage(){
     Navigator.push(context, MaterialPageRoute(builder: (context)=>ProfilePage()));
   }
@@ -179,7 +215,6 @@ class DashboardState extends State<Dashboard>{
       "remember_token":mToken,
       "before_time":beforeFlag
     };
-    print('jjjjjjjjjjjjjjjjjjjjjjjjjjjjjj'+mBody.toString());
     final response = await http.post(ApiInterface.CLOCK_IN, body: mBody);
     print(response.body);
     if (response.statusCode == 200) {
@@ -195,7 +230,6 @@ class DashboardState extends State<Dashboard>{
       if (status == 'success') {
         CommonMethods.showToast('Successfully clocked in');
         setState(() {
-          // changeClockInState = true;
           isUserClockIn = true;
         });
         (context as Element).reassemble();
@@ -241,6 +275,14 @@ class DashboardState extends State<Dashboard>{
     });
   }
 
+  String getTomorrow(){
+    var now = new DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day+1);
+    var formatter = new DateFormat('dd-MM-yyyy');
+    String tomorrowDate = formatter.format(tomorrow);
+    return tomorrowDate;
+  }
+
   Future<dynamic>getCurrentWeekSchedular(String startDate, String endDate,String token)async{
     var mBody = {
       "remember_token": token,
@@ -259,6 +301,12 @@ class DashboardState extends State<Dashboard>{
       } else {
         SchedulerModel schedulerModel = schedulerModelFromJson(response.body);
         List<Datum> userSchedule = schedulerModel.data;
+        for(int x=0;x<userSchedule.length;x++){
+          String getTomorrowDate = getTomorrow();
+          if(getTomorrowDate == userSchedule[x].scheduleDate){
+            isScheduleTomorrow = true;
+          }
+        }
         if(userSchedule.length == 0){
           return 'data_not_found';
         }
@@ -456,6 +504,7 @@ class DashboardState extends State<Dashboard>{
   void initState() {
     // TODO: implement initState
     super.initState();
+    // initPlatformState();
     bodyWidget = mBodyWidget();
     _getCurrentLocation();
     getPrefData();
@@ -475,6 +524,7 @@ class DashboardState extends State<Dashboard>{
         onSelectNotification: notificationSelected);
 
     _showNotification();
+    _checkDeviceValidation();
 
   }
 
@@ -495,8 +545,40 @@ class DashboardState extends State<Dashboard>{
     var generalNotificationDetails =
     new NotificationDetails(androidDetails, iSODetails);
     var time = Time(00, 02, 00);
-    fltrNotification.showDailyAtTime(1, 'Roster', 'You have Roster today ', time, generalNotificationDetails,
-        payload: 'Test Payload');
+    bool isScheduleTomorrow = false;
+
+    getToken().then((value)async{
+      var mBody = {
+        "remember_token": value,
+        "start_date": anyDayOfWeek(0),
+        "last_date": anyDayOfWeek(6),
+      };
+      final response = await http.post(ApiInterface.SCHEDULER, body: mBody);
+      if (response.statusCode == 200) {
+        final String loginResponse = response.body;
+        print(response.body);
+        Map<String, dynamic> d = json.decode(loginResponse.trim());
+        var status = d["success"];
+        if (status == 'success') {
+          SchedulerModel schedulerModel = schedulerModelFromJson(response.body);
+          List<Datum> userSchedule = schedulerModel.data;
+          for (int x = 0; x < userSchedule.length; x++) {
+            String getTomorrowDate = getTomorrow();
+            if (getTomorrowDate == userSchedule[x].scheduleDate) {
+              fltrNotification.showDailyAtTime(
+                  1, 'Roster', 'You have Roster today ', time,
+                  generalNotificationDetails, payload: 'Check your schedule here');
+            }
+          }
+        }
+      }
+    });
+print('isScheduleTomorrow'+isScheduleTomorrow.toString());
+    if(isScheduleTomorrow) {
+      fltrNotification.showDailyAtTime(
+          1, 'Roster', 'You have Roster today ', time,
+          generalNotificationDetails, payload: 'Test Payload');
+    }
   }
 
   Widget customPage(int pageNumber, Datum userSchedule){
@@ -560,7 +642,7 @@ class DashboardState extends State<Dashboard>{
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
-                    child: Row(
+                    child: userSchedule.scheduleEndTime == null?Text(''):Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
@@ -619,19 +701,11 @@ class DashboardState extends State<Dashboard>{
                                             .toString(),beforeFlag);
                                   }
                                   else {
-                                    CommonMethods.showToast(
-                                        'You are not at the location');
+                                    CommonMethods.showToast('You are not at the location');
                                   }
                                 });
                               });
                             });
-                            // getDistanceBtwnTwoPoints(double.parse(serverLat),
-                            //     double.parse(serverLongi),
-                            //     _currentPosition.latitude,
-                            //     _currentPosition.longitude).then((value) {
-                            //       print('value'+value.toString());
-                            //
-                            // });
                           }
                           else{
                             DateTime now = DateTime.now();
@@ -700,45 +774,45 @@ class DashboardState extends State<Dashboard>{
                         shape: RoundedRectangleBorder(borderRadius: new BorderRadius.circular(10.0))),
                   ):
                   Text(''),
-                  Padding(
-                    padding: const EdgeInsets.only(top:10.0),
-                    child: FutureBuilder(
-                      future: geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best),
-                      builder: (context,snapshot){
-                        if(snapshot.data == null){
-                          return Text('Loading...');
-                        }
-                        else{
-                          return Text('User Location:\nlat:'+snapshot.data.latitude.toString()+', long:'+snapshot.data.longitude.toString());
-                        }
-                      },
-                    )
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.only(top:5.0),
-                    child: FutureBuilder(
-                      future: getToken(),
-                      builder: (context,snapshot){
-                        if(snapshot.data == null){
-                          return Text('');
-                        }
-                        else{
-                          return FutureBuilder(
-                            future: getLocationData(snapshot.data),
-                            builder: (context, snapshot1){
-                              if(snapshot1.data == null){
-                                return Text('Loading...');
-                              }
-                              else{
-                                return Text('Work Location:\nlat:'+double.parse(snapshot1.data[0]).toString()+', long:'+double.parse(snapshot1.data[1]).toString());
-                              }
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  )
+                  // Padding(
+                  //   padding: const EdgeInsets.only(top:10.0),
+                  //   child: FutureBuilder(
+                  //     future: geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best),
+                  //     builder: (context,snapshot){
+                  //       if(snapshot.data == null){
+                  //         return Text('Loading...');
+                  //       }
+                  //       else{
+                  //         return Text('User Location:\nlat:'+snapshot.data.latitude.toString()+', long:'+snapshot.data.longitude.toString());
+                  //       }
+                  //     },
+                  //   )
+                  // ),
+                  //
+                  // Padding(
+                  //   padding: const EdgeInsets.only(top:5.0),
+                  //   child: FutureBuilder(
+                  //     future: getToken(),
+                  //     builder: (context,snapshot){
+                  //       if(snapshot.data == null){
+                  //         return Text('');
+                  //       }
+                  //       else{
+                  //         return FutureBuilder(
+                  //           future: getLocationData(snapshot.data),
+                  //           builder: (context, snapshot1){
+                  //             if(snapshot1.data == null){
+                  //               return Text('Loading...');
+                  //             }
+                  //             else{
+                  //               return Text('Work Location:\nlat:'+double.parse(snapshot1.data[0]).toString()+', long:'+double.parse(snapshot1.data[1]).toString());
+                  //             }
+                  //           },
+                  //         );
+                  //       }
+                  //     },
+                  //   ),
+                  // )
                 ],
               )
             ],
