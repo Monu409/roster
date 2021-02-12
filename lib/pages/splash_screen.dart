@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:roster_app/pages/login.dart';
@@ -16,11 +16,11 @@ class Splash extends StatefulWidget {
 }
 
 class SplashState extends State<Splash> {
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  // final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   getFcmToken(){
-    _firebaseMessaging.getToken().then((token){
-      print(token);
-    });
+  //   _firebaseMessaging.getToken().then((token){
+  //     print(token);
+  //   });
 
   }
 

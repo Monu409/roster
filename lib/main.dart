@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:android_intent/android_intent.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -10,11 +10,11 @@ import 'package:roster_app/pages/dashboard.dart';
 import 'package:roster_app/pages/login.dart';
 import 'package:roster_app/pages/schedules.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp();
+  // Firebase.initializeApp();
   runApp(MyApp());
   // DynamicLinkService().handleDynamicLinks();
 }
@@ -59,14 +59,14 @@ class _MyHomePageState extends State<MyHomePage> {
   String _currentAddress;
   SharedPreferences mPref;
   final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  // final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   final Location location = Location();
   getFcmToken()async{
     mPref = await SharedPreferences.getInstance();
-    _firebaseMessaging.getToken().then((token){
-      print(token);
-      mPref.setString('firebase_token', token);
-    });
+    // _firebaseMessaging.getToken().then((token){
+    //   print(token);
+    //   mPref.setString('firebase_token', token);
+    // });
 
   }
 
