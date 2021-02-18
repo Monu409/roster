@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:clean_swiper/clean_swiper.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,6 +44,7 @@ class DashboardState extends State<Dashboard>{
   String userId;
   int index = 0;
   int _selectedIndex = 0;
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
   double distanceInMeters;
   String serverLat;
   String serverLongi;
